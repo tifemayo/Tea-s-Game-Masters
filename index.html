@@ -912,7 +912,7 @@ function buildEntryRows(round){
       + '<div class="entry-id"><span class="team-mascot mascot-sm" style="--c:'+m.color+'"><img src="'+m.img+'" alt=""></span><span class="entry-name">'+escapeHtml(t.name)+'</span></div>'
       + '<div class="entry-controls">'
       +   '<button class="step-btn" data-action="dec" data-team="'+k+'" data-round="'+round+'" '+(state.editLocked?'disabled':'')+'>&minus;</button>'
-      +   '<input class="score-input" type="number" inputmode="numeric" data-team="'+k+'" data-round="'+round+'" value="'+displayValue+'" placeholder="0" '+(state.editLocked?'disabled':'')+'>'
+      +   '<input class="score-input" type="number" inputmode="numeric" step="1" min="-15" data-team="'+k+'" data-round="'+round+'" value="'+displayValue+'" placeholder="0" '+(state.editLocked?'disabled':'')+'>'
       +   '<button class="step-btn" data-action="inc" data-team="'+k+'" data-round="'+round+'" '+(state.editLocked?'disabled':'')+'>&plus;</button>'
       + '</div>'
       + '</div>';
@@ -1112,10 +1112,11 @@ function handleScreenClick(e){
     if(state.editLocked) return;
     const team = btn.dataset.team, round = Number(btn.dataset.round);
     const input = document.querySelector('.score-input[data-team="'+team+'"][data-round="'+round+'"]');
-    let v = state.teams[team].scores[round-1] ?? 0;
-    v = action==='inc' ? v + 1 : v - 1;
+    const current = state.teams[team].scores[round-1];
+    const delta = action === 'inc' ? 1 : -1;
+    const v = current == null ? delta : current + delta;
     state.teams[team].scores[round-1] = v;
-    input.value = v;
+    input.value = String(v);
     return;
   }
 
@@ -1151,16 +1152,18 @@ function handleScreenInput(e){
   const el = e.target;
   if(el.classList.contains('score-input')){
     const team = el.dataset.team, round = Number(el.dataset.round);
-    let v = el.value === '' ? null : Number(el.value);
+    if(el.value === '') {
+      state.teams[team].scores[round-1] = null;
+      return;
+    }
+    const v = Number(el.value);
     if(Number.isNaN(v)) {
       state.teams[team].scores[round-1] = null;
       el.value = '';
       return;
     }
     state.teams[team].scores[round-1] = v;
-    if(v < 0) {
-      el.value = String(v);
-    }
+    el.value = String(v);
   }
 }
 
